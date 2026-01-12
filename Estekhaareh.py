@@ -1,6 +1,8 @@
 import random
 import tkinter as tk
-from tkinter import messagebox
+import webbrowser
+import requests
+from bs4 import BeautifulSoup
 
 All = [1,3,5,7,9,11,13,15,17,19,21,23,25,27,29,31,33,35,37,39,41,43,45,47,49,51,53,55,57,59,61,63,65,67,69,71,73,75,77,79,81,83,85,87,89,91,93,95,97,99,101,103,105,107,109,111,113,115,117,119,121,123,125,127,129,131,133,135,137,139,141,143,145,147,149,151,153,155,157,159,161,163,165,167,169,171,173,175,177,179,181,183,185,187,189,191,193,195,197,199,201,203,205,207,209,211,213,215,217,219,221,223,225,227,229,231,233,235,237,239,241,243,245,247,249,251,253,255,257,259,261,263,265,267,269,271,273,275,277,279,281,283,285,287,289,291,293,295,297,299,301,303,305,307,309,311,313,315,317,319,321,323,325,327,329,331,333,335,337,339,341,343,345,347,349,351,353,355,357,359,361,363,365,367,369,371,373,375,377,379,381,383,385,387,389,391,393,395,397,399,401,403,405,407,409,411,413,415,417,419,421,423,425,427,429,431,433,435,437,439,441,443,445,447,449,451,453,455,457,459,461,463,465,467,469,471,473,475,477,479,481,483,485,487,489,491,493,495,497,499,501,503,505,507,509,511,513,515,517,519,521,523,525,527,529,531,533,535,537,539,541,543,545,547,549,551,553,555,557,559,561,563,565,567,569,571,573,575,577,579,581,583,585,587,589,591,593,595,597,599,601,603]
 Bad = [3,13,15,19,21,23,201,211,213,223,225,227,229,235,237,401,409,423,435,441,447,53,59,69,75,89,93,251,271,275,289,451,455,457,461,465,471,473,479,491,493,497,101,105,113,115,117,121,123,125,129,137,139,145,311,321,323,325,341,505,509,513,517,519,523,525,527,531,567,581,349,351,369,373,379,381,393,395,153,161,163,167,181,193,195,197,439]
@@ -52,8 +54,60 @@ else:
     خیلی خیلی خوب"""
     result_message = vvg 
 
-    
+def fetch_details(url):
+    try:
+        response = requests.get(url)
+        response.raise_for_status()  # Raise an HTTPError for bad responses
+        soup = BeautifulSoup(response.content, "html.parser")
+        
+        # Extract the required details with error handling
+        overall_result = soup.find("span", id="L_Result_General")
+        marriage_result = soup.find("span", id="L_Result_Marriage")
+        trade_result = soup.find("span", id="L_Result_Trade")
+        surah = soup.find("span", id="L_Chapter_Name")
+        verse = soup.find("span", id="L_Ayeh")
+        
+        # Use default values if elements are not found
+        overall_result = overall_result.text.strip() if overall_result else "نامشخص"
+        marriage_result = marriage_result.text.strip() if marriage_result else "نامشخص"
+        trade_result = trade_result.text.strip() if trade_result else "نامشخص"
+        surah = surah.text.strip() if surah else "نامشخص"
+        verse = verse.text.strip() if verse else "نامشخص"
+        
+        return overall_result, marriage_result, trade_result, surah, verse
+    except Exception as e:
+        return "خطا در دریافت اطلاعات", "خطا در دریافت اطلاعات", "خطا در دریافت اطلاعات", "خطا در دریافت اطلاعات", "خطا در دریافت اطلاعات"
+
+def open_webpage(url):
+    webbrowser.open(url)
+
+Webpage = f"https://old.aviny.com/quran/estekhareh/index2.aspx?page={Answer}"    
+
+# Fetch details from the webpage
+overall_result, marriage_result, trade_result, surah, verse = fetch_details(Webpage)
+
 root = tk.Tk()
-root.withdraw()
-messagebox.showinfo("استخاره", result_message)
-root.destroy()
+root.title("استخاره")
+
+# Create a label for the result message
+result_label = tk.Label(root, text=result_message, font=("Arial", 10), padx=100, pady=15)
+result_label.pack()
+
+# Display the fetched details
+details = f"""
+نتیجه کلی: {overall_result}
+نتیجه ازدواج: {marriage_result}
+نتیجه معامله: {trade_result}
+سوره: {surah}
+آیه: {verse}
+"""
+details_label = tk.Label(root, text=details, font=("Arial", 10), justify="right", padx=10, pady=10)
+details_label.pack()
+
+# Create a clickable hyperlink
+link = tk.Label(root, text="لینک: باز کردن صفحه", font=("Arial", 10), fg="blue", cursor="hand2")
+link.pack()
+link.bind("<Button-1>", lambda e: open_webpage(Webpage))
+
+# Run the tkinter main loop
+root.mainloop()
